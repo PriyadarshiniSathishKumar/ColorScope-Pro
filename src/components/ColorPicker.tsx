@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Eyedropper, Copy } from 'lucide-react';
+import { Pipette, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -85,7 +85,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ imageUrl, className }) => {
         />
         <div className="absolute bottom-2 right-2 glass p-2 rounded-md text-xs">
           <div className="flex items-center gap-1">
-            <Eyedropper className="h-3 w-3" />
+            <Pipette className="h-3 w-3" />
             <span>Click anywhere to pick a color</span>
           </div>
         </div>
