@@ -10,6 +10,7 @@ interface ModuleCardProps {
   icon: React.ReactNode;
   color: string;
   delay?: number;
+  onLaunch?: () => void;
 }
 
 const ModuleCard: React.FC<ModuleCardProps> = ({
@@ -17,7 +18,8 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   description,
   icon,
   color,
-  delay = 0
+  delay = 0,
+  onLaunch
 }) => {
   const colorMap: Record<string, string> = {
     purple: 'from-colorscope-purple to-colorscope-indigo',
@@ -27,6 +29,12 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   };
 
   const bgGradient = colorMap[color] || colorMap.purple;
+
+  const handleLaunch = () => {
+    if (onLaunch) {
+      onLaunch();
+    }
+  };
 
   return (
     <Card 
@@ -59,6 +67,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             "bg-gradient-to-r w-full",
             bgGradient
           )}
+          onClick={handleLaunch}
         >
           Launch Module
         </Button>

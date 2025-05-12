@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
-import { Eye, Layers, Image, Upload, Menu, X } from 'lucide-react';
+import { Eye, Layers, Image as ImageIcon, Upload, Menu, X } from 'lucide-react';
+import { toast } from "sonner";
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -10,9 +11,19 @@ const Navbar: React.FC = () => {
   const navItems = [
     { name: 'Color Picker', icon: <Eye className="h-4 w-4" /> },
     { name: 'Noise Remover', icon: <Layers className="h-4 w-4" /> },
-    { name: 'Compression', icon: <Image className="h-4 w-4" /> },
+    { name: 'Compression', icon: <ImageIcon className="h-4 w-4" /> },
     { name: 'Segmentation', icon: <Layers className="h-4 w-4" /> },
   ];
+
+  const handleNavItemClick = (itemName: string) => {
+    toast.info(`${itemName} module will be available soon!`);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleUploadClick = () => {
+    document.getElementById('image-upload')?.click();
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass">
@@ -26,12 +37,13 @@ const Navbar: React.FC = () => {
               key={index}
               variant="ghost"
               className="flex items-center gap-2 text-sm transition-all hover:text-colorscope-purple"
+              onClick={() => handleNavItemClick(item.name)}
             >
               {item.icon}
               {item.name}
             </Button>
           ))}
-          <Button className="ml-2 gradient-bg">
+          <Button className="ml-2 gradient-bg" onClick={handleUploadClick}>
             <Upload className="h-4 w-4 mr-2" />
             Upload Image
           </Button>
@@ -57,12 +69,13 @@ const Navbar: React.FC = () => {
                 key={index}
                 variant="ghost"
                 className="flex justify-start items-center gap-2 text-sm"
+                onClick={() => handleNavItemClick(item.name)}
               >
                 {item.icon}
                 {item.name}
               </Button>
             ))}
-            <Button className="mt-2 gradient-bg">
+            <Button className="mt-2 gradient-bg" onClick={handleUploadClick}>
               <Upload className="h-4 w-4 mr-2" />
               Upload Image
             </Button>

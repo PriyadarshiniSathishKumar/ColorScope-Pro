@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Pipette, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { toast } from "sonner";
 
 interface ColorPickerProps {
   imageUrl: string;
@@ -53,9 +54,16 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ imageUrl, className }) => {
   };
 
   const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    setCopyMessage(`${type} copied!`);
-    setTimeout(() => setCopyMessage(""), 2000);
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopyMessage(`${type} copied!`);
+        toast.success(`${type} copied to clipboard!`);
+        setTimeout(() => setCopyMessage(""), 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy: ', err);
+        toast.error("Failed to copy to clipboard");
+      });
   };
 
   React.useEffect(() => {

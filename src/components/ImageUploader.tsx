@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Upload, File, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from "sonner";
 
 interface ImageUploaderProps {
   onImageUploaded?: (imageData: string) => void;
@@ -30,6 +31,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
     if (!file.type.match('image.*')) {
       setUploadStatus('error');
       setErrorMessage('Please upload an image file');
+      toast.error('Please upload an image file');
       return;
     }
     
@@ -37,6 +39,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
     if (file.size > 10 * 1024 * 1024) {
       setUploadStatus('error');
       setErrorMessage('Image size should be less than 10MB');
+      toast.error('Image size should be less than 10MB');
       return;
     }
     
@@ -45,6 +48,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
       const result = e.target?.result as string;
       setImagePreview(result);
       setUploadStatus('success');
+      toast.success('Image uploaded successfully!');
       if (onImageUploaded) {
         onImageUploaded(result);
       }
@@ -52,6 +56,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
     reader.onerror = () => {
       setUploadStatus('error');
       setErrorMessage('Failed to read file');
+      toast.error('Failed to read file');
     };
     reader.readAsDataURL(file);
   };
@@ -75,6 +80,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
     setImagePreview(null);
     setUploadStatus('idle');
     setErrorMessage('');
+    toast.info('Upload reset. Select a new image.');
+  };
+  
+  const handleContinue = () => {
+    toast.success('Processing image!');
+    // In a real app, this would trigger the next step in the workflow
   };
 
   return (
@@ -149,7 +160,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUploaded, classNam
             <Button onClick={reset} variant="outline" size="sm">
               Change Image
             </Button>
-            <Button className="gradient-bg" size="sm">
+            <Button className="gradient-bg" size="sm" onClick={handleContinue}>
               Continue
             </Button>
           </div>

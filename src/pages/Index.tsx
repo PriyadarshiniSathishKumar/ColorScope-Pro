@@ -7,7 +7,8 @@ import ImageUploader from '@/components/ImageUploader';
 import ColorPicker from '@/components/ColorPicker';
 import Histogram from '@/components/Histogram';
 import { Button } from '@/components/ui/button';
-import { Eye, Layers, Image, Upload } from 'lucide-react';
+import { Eye, Layers, Image as ImageIcon, Upload } from 'lucide-react';
+import { toast } from "sonner";
 
 const Index = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -31,7 +32,7 @@ const Index = () => {
     {
       title: 'Compression & Analysis',
       description: 'Compress using DCT/DWT, compare quality, analyze frequency',
-      icon: <Image className="h-5 w-5 text-white" />,
+      icon: <ImageIcon className="h-5 w-5 text-white" />,
       color: 'pink',
     },
     {
@@ -45,6 +46,29 @@ const Index = () => {
   // Handle image upload
   const handleImageUploaded = (imageData: string) => {
     setUploadedImage(imageData);
+    toast.success("Image uploaded successfully!");
+  };
+
+  // Handle module launch
+  const handleLaunchModule = (moduleName: string) => {
+    toast.info(`${moduleName} module will be available soon!`);
+  };
+
+  // Handle demo view
+  const handleViewDemo = () => {
+    toast.info("Demo mode activated!");
+    setUploadedImage(sampleImage);
+  };
+
+  // Handle image upload button click
+  const handleUploadClick = () => {
+    document.getElementById('image-upload')?.click();
+  };
+
+  // Handle analysis start
+  const handleStartAnalysis = () => {
+    toast.success("Analysis started!");
+    // In a real app, this would trigger analysis processes
   };
 
   return (
@@ -66,11 +90,11 @@ const Index = () => {
                   noise reduction, and image compression.
                 </p>
                 <div className="flex gap-4">
-                  <Button className="gradient-bg">
+                  <Button className="gradient-bg" onClick={handleUploadClick}>
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Image
                   </Button>
-                  <Button variant="outline">View Demo</Button>
+                  <Button variant="outline" onClick={handleViewDemo}>View Demo</Button>
                 </div>
               </div>
             </div>
@@ -90,7 +114,7 @@ const Index = () => {
                         <h3 className="text-sm font-medium">Sample Image</h3>
                         <p className="text-xs text-gray-300">RGB Analysis</p>
                       </div>
-                      <Button size="sm" className="text-xs gradient-bg">Analyze</Button>
+                      <Button size="sm" className="text-xs gradient-bg" onClick={() => handleStartAnalysis()}>Analyze</Button>
                     </div>
                   </div>
                 </div>
@@ -116,6 +140,7 @@ const Index = () => {
                 icon={module.icon}
                 color={module.color}
                 delay={index * 100}
+                onLaunch={() => handleLaunchModule(module.title)}
               />
             ))}
           </div>
@@ -148,7 +173,10 @@ const Index = () => {
                       <span className="text-gray-400">Status:</span>
                       <span className="text-green-400">Ready for Analysis</span>
                     </p>
-                    <Button className="w-full gradient-bg mt-2">
+                    <Button 
+                      className="w-full gradient-bg mt-2"
+                      onClick={handleStartAnalysis}
+                    >
                       Start Advanced Analysis
                     </Button>
                   </div>
@@ -174,7 +202,7 @@ const Index = () => {
                   <p className="text-gray-400 text-center mb-6">
                     Upload an image to access the powerful features of ColorScope Pro.
                   </p>
-                  <Button className="gradient-bg">
+                  <Button className="gradient-bg" onClick={handleUploadClick}>
                     <Upload className="h-4 w-4 mr-2" />
                     Select Image
                   </Button>
