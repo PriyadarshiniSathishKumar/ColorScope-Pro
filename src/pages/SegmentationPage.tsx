@@ -7,11 +7,21 @@ import ImageUploader from '@/components/ImageUploader';
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
+import { applySegmentation, downloadImage } from '@/utils/imageProcessing';
 
 const SegmentationPage = () => {
   const navigate = useNavigate();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [segmentCount, setSegmentCount] = useState<number>(5);
+  const [segmentedImage, setSegmentedImage] = useState<string | null>(null);
+  const [grayscaleImage, setGrayscaleImage] = useState<string | null>(null);
+  const [markersImage, setMarkersImage] = useState<string | null>(null);
+  const [algorithm, setAlgorithm] = useState<'watershed' | 'kmeans'>('watershed');
+  const [displayStyle, setDisplayStyle] = useState<'colored' | 'contours'>('colored');
+  const [segmentStats, setSegmentStats] = useState<{
+    largestSegment: string;
+    smallestSegment: string;
+  } | null>(null);
   
   // Mock sample image
   const sampleImage = 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop';
@@ -19,7 +29,16 @@ const SegmentationPage = () => {
   // Handle image upload
   const handleImageUploaded = (imageData: string) => {
     setUploadedImage(imageData);
+    resetSegmentation();
     toast.success("Image uploaded successfully!");
+  };
+
+  // Reset segmentation state
+  const resetSegmentation = () => {
+    setSegmentedImage(null);
+    setGrayscaleImage(null);
+    setMarkersImage(null);
+    setSegmentStats(null);
   };
 
   // Handle image upload button click
@@ -37,16 +56,54 @@ const SegmentationPage = () => {
     setSegmentCount(Number(e.target.value));
   };
 
+  // Handle algorithm selection
+  const handleAlgorithmSelect = (selected: 'watershed' | 'kmeans') => {
+    setAlgorithm(selected);
+  };
+
+  // Handle display style selection
+  const handleDisplayStyleSelect = (selected: 'colored' | 'contours') => {
+    setDisplayStyle(selected);
+  };
+
   // Handle segmentation
   const handleSegment = () => {
-    toast.success(`Applying Watershed segmentation with ${segmentCount} segments!`);
-    // In a real app, this would apply the segmentation algorithm
+    if (!uploadedImage) return;
+    
+    toast.success(`Applying ${algorithm} segmentation with ${segmentCount} segments!`);
+    
+    const result = applySegmentation(uploadedImage, segmentCount, algorithm, displayStyle);
+    
+    setSegmentedImage(result.segmented);
+    setGrayscaleImage(result.grayscale);
+    setMarkersImage(result.markers);
+    setSegmentStats({
+      largestSegment: result.largestSegment,
+      smallestSegment: result.smallestSegment
+    });
   };
 
   // Handle download
   const handleDownload = () => {
-    toast.success("Segmented image downloaded!");
-    // In a real app, this would download the segmented image
+    if (!segmentedImage) {
+      toast.error("Please apply segmentation first!");
+      return;
+    }
+    
+    toast.success("Downloading segmented image...");
+    downloadImage(segmentedImage, "segmented_image.jpg");
+  };
+  
+  // Handle color selection
+  const handleColorSelection = (color: string) => {
+    toast.success(`Selected color: ${color}`);
+    // In a real app, this would apply color-based segmentation
+  };
+  
+  // Handle advanced color selection
+  const handleAdvancedColorSelection = () => {
+    toast.success("Advanced color selection mode activated");
+    // In a real app, this would open a color selection UI
   };
 
   return (
@@ -113,11 +170,18 @@ const SegmentationPage = () => {
                         <div className="grid grid-cols-2 gap-2">
                           <Button 
                             variant="outline" 
-                            className="bg-white/5 border-colorscope-teal"
+                            className={`${algorithm === 'watershed' ? "bg-white/5 border-colorscope-teal" : ""}`}
+                            onClick={() => handleAlgorithmSelect('watershed')}
                           >
                             Watershed
                           </Button>
-                          <Button variant="outline">K-Means</Button>
+                          <Button 
+                            variant="outline"
+                            className={`${algorithm === 'kmeans' ? "bg-white/5 border-colorscope-teal" : ""}`}
+                            onClick={() => handleAlgorithmSelect('kmeans')}
+                          >
+                            K-Means
+                          </Button>
                         </div>
                       </div>
                       
@@ -126,11 +190,18 @@ const SegmentationPage = () => {
                         <div className="grid grid-cols-2 gap-2">
                           <Button 
                             variant="outline" 
-                            className="bg-white/5 border-colorscope-teal"
+                            className={`${displayStyle === 'colored' ? "bg-white/5 border-colorscope-teal" : ""}`}
+                            onClick={() => handleDisplayStyleSelect('colored')}
                           >
                             Colored Regions
                           </Button>
-                          <Button variant="outline">Contours</Button>
+                          <Button 
+                            variant="outline"
+                            className={`${displayStyle === 'contours' ? "bg-white/5 border-colorscope-teal" : ""}`}
+                            onClick={() => handleDisplayStyleSelect('contours')}
+                          >
+                            Contours
+                          </Button>
                         </div>
                       </div>
                       
@@ -150,18 +221,36 @@ const SegmentationPage = () => {
                     </p>
                     
                     <div className="grid grid-cols-3 gap-2 mb-4">
-                      <div className="h-8 rounded-md bg-red-500"></div>
-                      <div className="h-8 rounded-md bg-green-500"></div>
-                      <div className="h-8 rounded-md bg-blue-500"></div>
-                      <div className="h-8 rounded-md bg-yellow-500"></div>
-                      <div className="h-8 rounded-md bg-purple-500"></div>
-                      <div className="h-8 rounded-md bg-gradient-to-r from-colorscope-teal to-colorscope-blue"></div>
+                      <div 
+                        className="h-8 rounded-md bg-red-500 cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                        onClick={() => handleColorSelection("red")}
+                      ></div>
+                      <div 
+                        className="h-8 rounded-md bg-green-500 cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                        onClick={() => handleColorSelection("green")}
+                      ></div>
+                      <div 
+                        className="h-8 rounded-md bg-blue-500 cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                        onClick={() => handleColorSelection("blue")}
+                      ></div>
+                      <div 
+                        className="h-8 rounded-md bg-yellow-500 cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                        onClick={() => handleColorSelection("yellow")}
+                      ></div>
+                      <div 
+                        className="h-8 rounded-md bg-purple-500 cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                        onClick={() => handleColorSelection("purple")}
+                      ></div>
+                      <div 
+                        className="h-8 rounded-md bg-gradient-to-r from-colorscope-teal to-colorscope-blue cursor-pointer hover:ring-2 hover:ring-white/50 transition-all"
+                        onClick={() => handleColorSelection("teal-blue")}
+                      ></div>
                     </div>
                     
                     <Button 
                       variant="outline"
                       className="w-full flex items-center gap-2"
-                      onClick={() => toast.info("Color-based selection will be available soon")}
+                      onClick={handleAdvancedColorSelection}
                     >
                       <Sliders className="h-4 w-4" />
                       Advanced Color Selection
@@ -181,6 +270,7 @@ const SegmentationPage = () => {
                         size="sm" 
                         className="gradient-bg flex items-center gap-2" 
                         onClick={handleDownload}
+                        disabled={!segmentedImage}
                       >
                         <Download className="h-4 w-4" />
                         Download Result
@@ -198,9 +288,17 @@ const SegmentationPage = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Segmented Image</p>
-                        <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                          <p className="text-gray-400 text-sm">Apply segmentation to see results</p>
-                        </div>
+                        {segmentedImage ? (
+                          <img 
+                            src={segmentedImage} 
+                            alt="Segmented" 
+                            className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
+                            <p className="text-gray-400 text-sm">Apply segmentation to see results</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -212,15 +310,31 @@ const SegmentationPage = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-gray-400 mb-2">Grayscale Conversion</p>
-                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                            <p className="text-gray-400 text-sm">Grayscale view</p>
-                          </div>
+                          {grayscaleImage ? (
+                            <img 
+                              src={grayscaleImage} 
+                              alt="Grayscale" 
+                              className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                            />
+                          ) : (
+                            <div className="aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
+                              <p className="text-gray-400 text-sm">Grayscale view</p>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-gray-400 mb-2">Watershed Markers</p>
-                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                            <p className="text-gray-400 text-sm">Markers view</p>
-                          </div>
+                          {markersImage ? (
+                            <img 
+                              src={markersImage} 
+                              alt="Markers" 
+                              className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                            />
+                          ) : (
+                            <div className="aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
+                              <p className="text-gray-400 text-sm">Markers view</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -233,11 +347,11 @@ const SegmentationPage = () => {
                           </li>
                           <li className="flex justify-between">
                             <span className="text-gray-400">Largest Segment:</span>
-                            <span>42% of image</span>
+                            <span>{segmentStats?.largestSegment || '42% of image'}</span>
                           </li>
                           <li className="flex justify-between">
                             <span className="text-gray-400">Smallest Segment:</span>
-                            <span>3% of image</span>
+                            <span>{segmentStats?.smallestSegment || '3% of image'}</span>
                           </li>
                         </ul>
                       </div>

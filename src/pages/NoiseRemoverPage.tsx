@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,17 @@ import ImageUploader from '@/components/ImageUploader';
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
+import { applyMedianFilter, applyBilateralFilter, applyGaussianFilter, generateFFTVisualization } from '@/utils/imageProcessing';
 
 const NoiseRemoverPage = () => {
   const navigate = useNavigate();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [filterIntensity, setFilterIntensity] = useState<number>(50);
+  const [detailPreservation, setDetailPreservation] = useState<number>(75);
+  const [fftVisualization, setFftVisualization] = useState<string | null>(null);
+  const [showingFFT, setShowingFFT] = useState<boolean>(false);
   
   // Mock sample image
   const sampleImage = 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop';
@@ -18,6 +24,9 @@ const NoiseRemoverPage = () => {
   // Handle image upload
   const handleImageUploaded = (imageData: string) => {
     setUploadedImage(imageData);
+    setProcessedImage(null); // Reset processed image
+    setFftVisualization(null); // Reset FFT visualization
+    setSelectedFilter(null); // Reset selected filter
     toast.success("Image uploaded successfully!");
   };
 
@@ -31,10 +40,75 @@ const NoiseRemoverPage = () => {
     navigate('/');
   };
 
+  // Handle filter intensity change
+  const handleFilterIntensityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterIntensity(Number(e.target.value));
+  };
+  
+  // Handle detail preservation change
+  const handleDetailPreservationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDetailPreservation(Number(e.target.value));
+  };
+
   // Handle filter application
   const handleApplyFilter = (filterType: string) => {
-    toast.success(`${filterType} filter applied!`);
-    // In a real app, this would apply the filter
+    if (!uploadedImage) return;
+    
+    setSelectedFilter(filterType);
+    toast.success(`${filterType} filter selected!`);
+    
+    // In a real app, these would apply the actual filter
+    switch (filterType) {
+      case "Median":
+        setProcessedImage(applyMedianFilter(uploadedImage));
+        break;
+      case "Bilateral":
+        setProcessedImage(applyBilateralFilter(uploadedImage));
+        break;
+      case "Gaussian":
+        setProcessedImage(applyGaussianFilter(uploadedImage));
+        break;
+      case "Custom":
+        // Apply custom filter with intensity and detail preservation
+        const customized = applyMedianFilter(uploadedImage) + `&intensity=${filterIntensity}&detail=${detailPreservation}`;
+        setProcessedImage(customized);
+        break;
+      default:
+        break;
+    }
+  };
+  
+  // Handle process image button
+  const handleProcessImage = () => {
+    if (!uploadedImage) return;
+    
+    if (!selectedFilter) {
+      toast.error("Please select a filter first!");
+      return;
+    }
+    
+    toast.success("Processing image...");
+    
+    // If we already have a processed image, just show a success message
+    if (processedImage) {
+      toast.success("Image processing complete!");
+    } else {
+      // Otherwise apply the median filter as default
+      setProcessedImage(applyMedianFilter(uploadedImage));
+      toast.success("Default median filter applied!");
+    }
+  };
+  
+  // Handle showing FFT visualization
+  const handleShowFFT = () => {
+    if (!uploadedImage) return;
+    
+    setShowingFFT(true);
+    toast.success("Generating FFT visualization...");
+    
+    // Generate FFT visualization
+    const fft = generateFFTVisualization(uploadedImage);
+    setFftVisualization(fft);
   };
 
   return (
@@ -83,19 +157,19 @@ const NoiseRemoverPage = () => {
                     <h3 className="text-lg font-medium mb-4">Filter Options</h3>
                     <div className="space-y-3">
                       <Button 
-                        className="w-full bg-gradient-to-r from-colorscope-blue to-colorscope-teal"
+                        className={`w-full ${selectedFilter === "Median" ? "bg-gradient-to-r from-colorscope-blue to-colorscope-teal ring-2 ring-white/20" : "bg-gradient-to-r from-colorscope-blue to-colorscope-teal"}`}
                         onClick={() => handleApplyFilter("Median")}
                       >
                         Apply Median Filter
                       </Button>
                       <Button 
-                        className="w-full bg-gradient-to-r from-colorscope-purple to-colorscope-indigo"
+                        className={`w-full ${selectedFilter === "Bilateral" ? "bg-gradient-to-r from-colorscope-purple to-colorscope-indigo ring-2 ring-white/20" : "bg-gradient-to-r from-colorscope-purple to-colorscope-indigo"}`}
                         onClick={() => handleApplyFilter("Bilateral")}
                       >
                         Apply Bilateral Filter
                       </Button>
                       <Button 
-                        className="w-full bg-gradient-to-r from-colorscope-pink to-colorscope-purple"
+                        className={`w-full ${selectedFilter === "Gaussian" ? "bg-gradient-to-r from-colorscope-pink to-colorscope-purple ring-2 ring-white/20" : "bg-gradient-to-r from-colorscope-pink to-colorscope-purple"}`}
                         onClick={() => handleApplyFilter("Gaussian")}
                       >
                         Apply Gaussian Filter
@@ -109,23 +183,33 @@ const NoiseRemoverPage = () => {
                       <div className="space-y-1">
                         <div className="flex justify-between">
                           <label className="text-sm">Filter Intensity</label>
-                          <span className="text-xs text-gray-400">50%</span>
+                          <span className="text-xs text-gray-400">{filterIntensity}%</span>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-700">
-                          <div className="h-full rounded-full bg-gradient-to-r from-colorscope-blue to-colorscope-teal w-1/2"></div>
-                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          value={filterIntensity} 
+                          onChange={handleFilterIntensityChange}
+                          className="w-full accent-colorscope-blue"
+                        />
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between">
                           <label className="text-sm">Detail Preservation</label>
-                          <span className="text-xs text-gray-400">75%</span>
+                          <span className="text-xs text-gray-400">{detailPreservation}%</span>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-700">
-                          <div className="h-full rounded-full bg-gradient-to-r from-colorscope-purple to-colorscope-blue w-3/4"></div>
-                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          value={detailPreservation} 
+                          onChange={handleDetailPreservationChange}
+                          className="w-full accent-colorscope-purple"
+                        />
                       </div>
                       <Button 
-                        className="w-full flex items-center justify-center"
+                        className={`w-full flex items-center justify-center ${selectedFilter === "Custom" ? "ring-2 ring-white/20" : ""}`}
                         onClick={() => handleApplyFilter("Custom")}
                       >
                         <Sliders className="h-4 w-4 mr-2" />
@@ -143,7 +227,11 @@ const NoiseRemoverPage = () => {
                   <div className="glass p-4 rounded-lg">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium">Image Preview</h3>
-                      <Button size="sm" className="gradient-bg">
+                      <Button 
+                        size="sm" 
+                        className="gradient-bg"
+                        onClick={handleProcessImage}
+                      >
                         <Play className="h-4 w-4 mr-2" />
                         Process Image
                       </Button>
@@ -160,9 +248,17 @@ const NoiseRemoverPage = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Processed Image</p>
-                        <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                          <p className="text-gray-400 text-sm">Apply a filter to see results</p>
-                        </div>
+                        {processedImage ? (
+                          <img 
+                            src={processedImage} 
+                            alt="Processed" 
+                            className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
+                            <p className="text-gray-400 text-sm">Apply a filter to see results</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -174,15 +270,23 @@ const NoiseRemoverPage = () => {
                         View and manipulate the frequency domain representation of your image
                       </p>
                       
-                      <div className="h-48 rounded-md bg-colorscope-dark-2 border border-gray-700 flex items-center justify-center">
-                        <p className="text-gray-400 text-sm">Frequency domain visualization will appear here</p>
-                      </div>
+                      {fftVisualization ? (
+                        <img 
+                          src={fftVisualization} 
+                          alt="FFT Visualization" 
+                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                        />
+                      ) : (
+                        <div className="h-48 rounded-md bg-colorscope-dark-2 border border-gray-700 flex items-center justify-center">
+                          <p className="text-gray-400 text-sm">Frequency domain visualization will appear here</p>
+                        </div>
+                      )}
                       
                       <div className="mt-4">
                         <Button 
                           variant="outline" 
                           className="w-full"
-                          onClick={() => toast.info("FFT visualization will be available soon")}
+                          onClick={handleShowFFT}
                         >
                           Show FFT Visualization
                         </Button>
