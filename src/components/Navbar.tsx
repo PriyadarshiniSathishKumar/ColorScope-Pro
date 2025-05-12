@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 import { Eye, Layers, Image as ImageIcon, Upload, Menu, X } from 'lucide-react';
 import { toast } from "sonner";
+import { useNavigate } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { name: 'Color Picker', icon: <Eye className="h-4 w-4" /> },
-    { name: 'Noise Remover', icon: <Layers className="h-4 w-4" /> },
-    { name: 'Compression', icon: <ImageIcon className="h-4 w-4" /> },
-    { name: 'Segmentation', icon: <Layers className="h-4 w-4" /> },
+    { name: 'Color Picker', icon: <Eye className="h-4 w-4" />, route: '/color-picker' },
+    { name: 'Noise Remover', icon: <Layers className="h-4 w-4" />, route: '/noise-remover' },
+    { name: 'Compression', icon: <ImageIcon className="h-4 w-4" />, route: '/compression' },
+    { name: 'Segmentation', icon: <Layers className="h-4 w-4" />, route: '/segmentation' },
   ];
 
-  const handleNavItemClick = (itemName: string) => {
-    toast.info(`${itemName} module will be available soon!`);
+  const handleNavItemClick = (item: { name: string; route: string }) => {
+    navigate(item.route);
     setIsMobileMenuOpen(false);
   };
 
@@ -25,10 +27,16 @@ const Navbar: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Logo />
+        <div onClick={handleLogoClick} className="cursor-pointer">
+          <Logo />
+        </div>
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
@@ -37,7 +45,7 @@ const Navbar: React.FC = () => {
               key={index}
               variant="ghost"
               className="flex items-center gap-2 text-sm transition-all hover:text-colorscope-purple"
-              onClick={() => handleNavItemClick(item.name)}
+              onClick={() => handleNavItemClick(item)}
             >
               {item.icon}
               {item.name}
@@ -69,7 +77,7 @@ const Navbar: React.FC = () => {
                 key={index}
                 variant="ghost"
                 className="flex justify-start items-center gap-2 text-sm"
-                onClick={() => handleNavItemClick(item.name)}
+                onClick={() => handleNavItemClick(item)}
               >
                 {item.icon}
                 {item.name}

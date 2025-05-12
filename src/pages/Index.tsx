@@ -9,8 +9,10 @@ import Histogram from '@/components/Histogram';
 import { Button } from '@/components/ui/button';
 import { Eye, Layers, Image as ImageIcon, Upload } from 'lucide-react';
 import { toast } from "sonner";
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   
   // Mock sample image
@@ -22,24 +24,28 @@ const Index = () => {
       description: 'Extract RGB values, view histograms, analyze color distribution',
       icon: <Eye className="h-5 w-5 text-white" />,
       color: 'purple',
+      route: '/color-picker'
     },
     {
       title: 'Noise Remover & Enhancer',
       description: 'Apply non-linear filters, remove noise, preserve details',
       icon: <Layers className="h-5 w-5 text-white" />,
       color: 'blue',
+      route: '/noise-remover'
     },
     {
       title: 'Compression & Analysis',
       description: 'Compress using DCT/DWT, compare quality, analyze frequency',
       icon: <ImageIcon className="h-5 w-5 text-white" />,
       color: 'pink',
+      route: '/compression'
     },
     {
       title: 'Color-Based Segmentation',
       description: 'Apply watershed segmentation, extract color regions',
       icon: <Layers className="h-5 w-5 text-white" />,
       color: 'teal',
+      route: '/segmentation'
     }
   ];
 
@@ -50,8 +56,8 @@ const Index = () => {
   };
 
   // Handle module launch
-  const handleLaunchModule = (moduleName: string) => {
-    toast.info(`${moduleName} module will be available soon!`);
+  const handleLaunchModule = (route: string) => {
+    navigate(route);
   };
 
   // Handle demo view
@@ -68,7 +74,7 @@ const Index = () => {
   // Handle analysis start
   const handleStartAnalysis = () => {
     toast.success("Analysis started!");
-    // In a real app, this would trigger analysis processes
+    navigate('/color-picker');
   };
 
   return (

@@ -3,6 +3,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface ModuleCardProps {
   title: string;
@@ -10,6 +11,7 @@ interface ModuleCardProps {
   icon: React.ReactNode;
   color: string;
   delay?: number;
+  route?: string;
   onLaunch?: () => void;
 }
 
@@ -19,8 +21,10 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   icon,
   color,
   delay = 0,
+  route,
   onLaunch
 }) => {
+  const navigate = useNavigate();
   const colorMap: Record<string, string> = {
     purple: 'from-colorscope-purple to-colorscope-indigo',
     blue: 'from-colorscope-blue to-colorscope-teal',
@@ -31,7 +35,9 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   const bgGradient = colorMap[color] || colorMap.purple;
 
   const handleLaunch = () => {
-    if (onLaunch) {
+    if (route) {
+      navigate(route);
+    } else if (onLaunch) {
       onLaunch();
     }
   };
