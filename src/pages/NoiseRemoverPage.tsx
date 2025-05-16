@@ -6,7 +6,14 @@ import ImageUploader from '@/components/ImageUploader';
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { applyMedianFilter, applyBilateralFilter, applyGaussianFilter, generateFFTVisualization } from '@/utils/imageProcessing';
+import ImageVisualization from '@/components/ImageVisualization';
+import { 
+  downloadImage,
+  applyFixedMedianFilter, 
+  applyFixedBilateralFilter, 
+  applyFixedGaussianFilter, 
+  createVisualEffect 
+} from '@/utils/imageProcessingFixedPromise';
 
 const NoiseRemoverPage = () => {
   const navigate = useNavigate();
@@ -16,7 +23,7 @@ const NoiseRemoverPage = () => {
   const [filterIntensity, setFilterIntensity] = useState<number>(50);
   const [detailPreservation, setDetailPreservation] = useState<number>(75);
   const [fftVisualization, setFftVisualization] = useState<string | null>(null);
-  const [showingFFT, setShowingFFT] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   
   // Mock sample image
   const sampleImage = 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop';
@@ -51,35 +58,52 @@ const NoiseRemoverPage = () => {
   };
 
   // Handle filter application
-  const handleApplyFilter = (filterType: string) => {
+  const handleApplyFilter = async (filterType: string) => {
     if (!uploadedImage) return;
     
     setSelectedFilter(filterType);
-    toast.success(`${filterType} filter selected!`);
+    setIsProcessing(true);
+    toast.success(`Applying ${filterType} filter...`);
     
-    // In a real app, these would apply the actual filter
-    switch (filterType) {
-      case "Median":
-        setProcessedImage(applyMedianFilter(uploadedImage));
-        break;
-      case "Bilateral":
-        setProcessedImage(applyBilateralFilter(uploadedImage));
-        break;
-      case "Gaussian":
-        setProcessedImage(applyGaussianFilter(uploadedImage));
-        break;
-      case "Custom":
-        // Apply custom filter with intensity and detail preservation
-        const customized = applyMedianFilter(uploadedImage) + `&intensity=${filterIntensity}&detail=${detailPreservation}`;
-        setProcessedImage(customized);
-        break;
-      default:
-        break;
+    try {
+      // In a real app, these would apply the actual filter
+      let processedImg: string;
+      
+      switch (filterType) {
+        case "Median":
+          processedImg = await applyFixedMedianFilter(uploadedImage);
+          break;
+        case "Bilateral":
+          processedImg = await applyFixedBilateralFilter(uploadedImage);
+          break;
+        case "Gaussian":
+          processedImg = await applyFixedGaussianFilter(uploadedImage);
+          break;
+        case "Custom":
+          // Apply custom filter with intensity and detail preservation
+          processedImg = await createVisualEffect(
+            uploadedImage, 
+            'smooth', 
+            `${filterIntensity > 70 ? 'blue' : filterIntensity > 40 ? 'purple' : 'red'}`
+          );
+          break;
+        default:
+          processedImg = await applyFixedMedianFilter(uploadedImage);
+          break;
+      }
+      
+      setProcessedImage(processedImg);
+      toast.success(`${filterType} filter applied successfully!`);
+    } catch (error) {
+      console.error("Error applying filter:", error);
+      toast.error("Failed to apply filter. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
   };
   
   // Handle process image button
-  const handleProcessImage = () => {
+  const handleProcessImage = async () => {
     if (!uploadedImage) return;
     
     if (!selectedFilter) {
@@ -87,28 +111,45 @@ const NoiseRemoverPage = () => {
       return;
     }
     
+    setIsProcessing(true);
     toast.success("Processing image...");
     
-    // If we already have a processed image, just show a success message
-    if (processedImage) {
-      toast.success("Image processing complete!");
-    } else {
-      // Otherwise apply the median filter as default
-      setProcessedImage(applyMedianFilter(uploadedImage));
-      toast.success("Default median filter applied!");
+    try {
+      // If we already have a processed image, just show a success message
+      if (processedImage) {
+        toast.success("Image processing complete!");
+      } else {
+        // Otherwise apply the median filter as default
+        const result = await applyFixedMedianFilter(uploadedImage);
+        setProcessedImage(result);
+        toast.success("Default median filter applied!");
+      }
+    } catch (error) {
+      console.error("Error processing image:", error);
+      toast.error("Failed to process image. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
   };
   
   // Handle showing FFT visualization
-  const handleShowFFT = () => {
+  const handleShowFFT = async () => {
     if (!uploadedImage) return;
     
-    setShowingFFT(true);
+    setIsProcessing(true);
     toast.success("Generating FFT visualization...");
     
-    // Generate FFT visualization
-    const fft = generateFFTVisualization(uploadedImage);
-    setFftVisualization(fft);
+    try {
+      // Generate FFT visualization
+      const fft = await createVisualEffect(uploadedImage, 'fft', 'blue');
+      setFftVisualization(fft);
+      toast.success("FFT visualization generated!");
+    } catch (error) {
+      console.error("Error generating FFT:", error);
+      toast.error("Failed to generate FFT visualization. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -128,6 +169,7 @@ const NoiseRemoverPage = () => {
           
           <div className="flex flex-col md:flex-row items-start gap-8">
             <div className="md:w-1/3 space-y-6">
+              {/* Upload section */}
               <div className="animate-fade-in bg-white/5 rounded-lg p-6 backdrop-blur-lg border border-white/10">
                 <h1 className="text-3xl font-bold mb-2 gradient-text">Noise Remover & Enhancer</h1>
                 <p className="text-gray-300 mb-6">
@@ -153,30 +195,35 @@ const NoiseRemoverPage = () => {
               
               {uploadedImage && (
                 <div className="space-y-4">
+                  {/* Filter options */}
                   <Card className="glass p-4">
                     <h3 className="text-lg font-medium mb-4">Filter Options</h3>
                     <div className="space-y-3">
                       <Button 
                         className={`w-full ${selectedFilter === "Median" ? "bg-gradient-to-r from-colorscope-blue to-colorscope-teal ring-2 ring-white/20" : "bg-gradient-to-r from-colorscope-blue to-colorscope-teal"}`}
                         onClick={() => handleApplyFilter("Median")}
+                        disabled={isProcessing}
                       >
-                        Apply Median Filter
+                        {isProcessing && selectedFilter === "Median" ? "Applying..." : "Apply Median Filter"}
                       </Button>
                       <Button 
                         className={`w-full ${selectedFilter === "Bilateral" ? "bg-gradient-to-r from-colorscope-purple to-colorscope-indigo ring-2 ring-white/20" : "bg-gradient-to-r from-colorscope-purple to-colorscope-indigo"}`}
                         onClick={() => handleApplyFilter("Bilateral")}
+                        disabled={isProcessing}
                       >
-                        Apply Bilateral Filter
+                        {isProcessing && selectedFilter === "Bilateral" ? "Applying..." : "Apply Bilateral Filter"}
                       </Button>
                       <Button 
                         className={`w-full ${selectedFilter === "Gaussian" ? "bg-gradient-to-r from-colorscope-pink to-colorscope-purple ring-2 ring-white/20" : "bg-gradient-to-r from-colorscope-pink to-colorscope-purple"}`}
                         onClick={() => handleApplyFilter("Gaussian")}
+                        disabled={isProcessing}
                       >
-                        Apply Gaussian Filter
+                        {isProcessing && selectedFilter === "Gaussian" ? "Applying..." : "Apply Gaussian Filter"}
                       </Button>
                     </div>
                   </Card>
                   
+                  {/* Advanced settings */}
                   <Card className="glass p-4">
                     <h3 className="text-lg font-medium mb-4">Advanced Settings</h3>
                     <div className="space-y-3">
@@ -211,9 +258,10 @@ const NoiseRemoverPage = () => {
                       <Button 
                         className={`w-full flex items-center justify-center ${selectedFilter === "Custom" ? "ring-2 ring-white/20" : ""}`}
                         onClick={() => handleApplyFilter("Custom")}
+                        disabled={isProcessing}
                       >
                         <Sliders className="h-4 w-4 mr-2" />
-                        Apply Custom Settings
+                        {isProcessing && selectedFilter === "Custom" ? "Applying..." : "Apply Custom Settings"}
                       </Button>
                     </div>
                   </Card>
@@ -224,6 +272,7 @@ const NoiseRemoverPage = () => {
             <div className="md:w-2/3 mt-6 md:mt-0">
               {uploadedImage ? (
                 <div className="space-y-6 animate-fade-in">
+                  {/* Image preview */}
                   <div className="glass p-4 rounded-lg">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium">Image Preview</h3>
@@ -231,38 +280,34 @@ const NoiseRemoverPage = () => {
                         size="sm" 
                         className="gradient-bg"
                         onClick={handleProcessImage}
+                        disabled={isProcessing}
                       >
                         <Play className="h-4 w-4 mr-2" />
-                        Process Image
+                        {isProcessing ? "Processing..." : "Process Image"}
                       </Button>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Original Image</p>
-                        <img 
-                          src={uploadedImage} 
-                          alt="Original" 
-                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                        <ImageVisualization 
+                          imageData={uploadedImage} 
+                          altText="Original" 
+                          fallbackText="Original image" 
                         />
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Processed Image</p>
-                        {processedImage ? (
-                          <img 
-                            src={processedImage} 
-                            alt="Processed" 
-                            className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                          />
-                        ) : (
-                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                            <p className="text-gray-400 text-sm">Apply a filter to see results</p>
-                          </div>
-                        )}
+                        <ImageVisualization 
+                          imageData={processedImage}
+                          altText="Processed" 
+                          fallbackText="Apply a filter to see results" 
+                        />
                       </div>
                     </div>
                   </div>
                   
+                  {/* Frequency domain */}
                   <Card className="glass">
                     <div className="p-4">
                       <h3 className="text-lg font-medium mb-4">Frequency Domain</h3>
@@ -270,31 +315,27 @@ const NoiseRemoverPage = () => {
                         View and manipulate the frequency domain representation of your image
                       </p>
                       
-                      {fftVisualization ? (
-                        <img 
-                          src={fftVisualization} 
-                          alt="FFT Visualization" 
-                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                        />
-                      ) : (
-                        <div className="h-48 rounded-md bg-colorscope-dark-2 border border-gray-700 flex items-center justify-center">
-                          <p className="text-gray-400 text-sm">Frequency domain visualization will appear here</p>
-                        </div>
-                      )}
+                      <ImageVisualization 
+                        imageData={fftVisualization}
+                        altText="FFT Visualization" 
+                        fallbackText="Frequency domain visualization will appear here" 
+                      />
                       
                       <div className="mt-4">
                         <Button 
                           variant="outline" 
                           className="w-full"
                           onClick={handleShowFFT}
+                          disabled={isProcessing}
                         >
-                          Show FFT Visualization
+                          {isProcessing ? "Generating..." : "Show FFT Visualization"}
                         </Button>
                       </div>
                     </div>
                   </Card>
                 </div>
               ) : (
+                // No image selected view
                 <div className="glass rounded-lg p-8 h-full flex flex-col items-center justify-center animate-fade-in">
                   <div className="w-16 h-16 rounded-full gradient-animate mb-6 flex items-center justify-center">
                     <Upload className="h-6 w-6 text-white" />
