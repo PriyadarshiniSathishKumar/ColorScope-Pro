@@ -7,7 +7,9 @@ import ImageUploader from '@/components/ImageUploader';
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { applySegmentation, downloadImage } from '@/utils/imageProcessing';
+import { downloadImage } from '@/utils/imageProcessing';
+import { applyFixedSegmentation } from '@/utils/imageProcessingFixedPromise';
+import ImageVisualization from '@/components/ImageVisualization';
 
 const SegmentationPage = () => {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ const SegmentationPage = () => {
   const [markersImage, setMarkersImage] = useState<string | null>(null);
   const [algorithm, setAlgorithm] = useState<'watershed' | 'kmeans'>('watershed');
   const [displayStyle, setDisplayStyle] = useState<'colored' | 'contours'>('colored');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [segmentStats, setSegmentStats] = useState<{
     largestSegment: string;
     smallestSegment: string;
@@ -67,20 +70,35 @@ const SegmentationPage = () => {
   };
 
   // Handle segmentation
-  const handleSegment = () => {
-    if (!uploadedImage) return;
+  const handleSegment = async () => {
+    if (!uploadedImage) {
+      toast.error("Please upload an image first!");
+      return;
+    }
     
+    setIsProcessing(true);
     toast.success(`Applying ${algorithm} segmentation with ${segmentCount} segments!`);
     
-    const result = applySegmentation(uploadedImage, segmentCount, algorithm, displayStyle);
-    
-    setSegmentedImage(result.segmented);
-    setGrayscaleImage(result.grayscale);
-    setMarkersImage(result.markers);
-    setSegmentStats({
-      largestSegment: result.largestSegment,
-      smallestSegment: result.smallestSegment
-    });
+    try {
+      console.log("Starting segmentation process...");
+      const result = await applyFixedSegmentation(uploadedImage, segmentCount, algorithm, displayStyle);
+      console.log("Segmentation complete, setting results...");
+      
+      setSegmentedImage(result.segmented);
+      setGrayscaleImage(result.grayscale);
+      setMarkersImage(result.markers);
+      setSegmentStats({
+        largestSegment: result.largestSegment,
+        smallestSegment: result.smallestSegment
+      });
+      
+      toast.success("Segmentation complete!");
+    } catch (error) {
+      console.error("Segmentation error:", error);
+      toast.error("Error applying segmentation!");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Handle download
@@ -208,8 +226,9 @@ const SegmentationPage = () => {
                       <Button 
                         className="w-full bg-gradient-to-r from-colorscope-teal to-colorscope-blue"
                         onClick={handleSegment}
+                        disabled={isProcessing}
                       >
-                        Apply Segmentation
+                        {isProcessing ? 'Processing...' : 'Apply Segmentation'}
                       </Button>
                     </div>
                   </Card>
@@ -280,25 +299,19 @@ const SegmentationPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Original Image</p>
-                        <img 
-                          src={uploadedImage} 
-                          alt="Original" 
-                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                        <ImageVisualization 
+                          imageData={uploadedImage}
+                          altText="Original" 
+                          fallbackText="Original image" 
                         />
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Segmented Image</p>
-                        {segmentedImage ? (
-                          <img 
-                            src={segmentedImage} 
-                            alt="Segmented" 
-                            className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                          />
-                        ) : (
-                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                            <p className="text-gray-400 text-sm">Apply segmentation to see results</p>
-                          </div>
-                        )}
+                        <ImageVisualization 
+                          imageData={segmentedImage}
+                          altText="Segmented"
+                          fallbackText="Apply segmentation to see results" 
+                        />
                       </div>
                     </div>
                   </Card>
@@ -310,31 +323,19 @@ const SegmentationPage = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-gray-400 mb-2">Grayscale Conversion</p>
-                          {grayscaleImage ? (
-                            <img 
-                              src={grayscaleImage} 
-                              alt="Grayscale" 
-                              className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                            />
-                          ) : (
-                            <div className="aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                              <p className="text-gray-400 text-sm">Grayscale view</p>
-                            </div>
-                          )}
+                          <ImageVisualization 
+                            imageData={grayscaleImage}
+                            altText="Grayscale" 
+                            fallbackText="Grayscale view" 
+                          />
                         </div>
                         <div>
                           <p className="text-sm text-gray-400 mb-2">Watershed Markers</p>
-                          {markersImage ? (
-                            <img 
-                              src={markersImage} 
-                              alt="Markers" 
-                              className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                            />
-                          ) : (
-                            <div className="aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                              <p className="text-gray-400 text-sm">Markers view</p>
-                            </div>
-                          )}
+                          <ImageVisualization 
+                            imageData={markersImage}
+                            altText="Markers" 
+                            fallbackText="Markers view" 
+                          />
                         </div>
                       </div>
                       
