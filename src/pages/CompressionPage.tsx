@@ -7,7 +7,9 @@ import ImageUploader from '@/components/ImageUploader';
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { applyDCTCompression, applyDWTCompression, downloadImage } from '@/utils/imageProcessing';
+import ImageVisualization from '@/components/ImageVisualization';
+import { downloadImage } from '@/utils/imageProcessing';
+import { applyFixedDCTCompression, applyFixedDWTCompression } from '@/utils/imageProcessingFixedPromise';
 
 const CompressionPage = () => {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ const CompressionPage = () => {
   const [compressedImage, setCompressedImage] = useState<string | null>(null);
   const [dctVisualization, setDctVisualization] = useState<string | null>(null);
   const [dwtVisualization, setDwtVisualization] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [compressionStats, setCompressionStats] = useState<{
     originalSize: string;
     compressedSize: string;
@@ -52,33 +55,45 @@ const CompressionPage = () => {
   };
 
   // Handle compression application
-  const handleApplyCompression = (type: string) => {
-    if (!uploadedImage) return;
+  const handleApplyCompression = async (type: string) => {
+    if (!uploadedImage) {
+      toast.error("Please upload an image first");
+      return;
+    }
     
+    setIsProcessing(true);
     toast.success(`Applying ${type} compression at ${compressionLevel}% level...`);
     
-    if (type === "DCT") {
-      const result = applyDCTCompression(uploadedImage, compressionLevel);
-      setCompressedImage(result.compressed);
-      setDctVisualization(result.dctVisualization);
-      setDwtVisualization(null);
-      setCompressionStats({
-        originalSize: result.originalSize,
-        compressedSize: result.compressedSize,
-        ratio: result.ratio,
-        psnr: result.psnr
-      });
-    } else if (type === "DWT") {
-      const result = applyDWTCompression(uploadedImage, compressionLevel);
-      setCompressedImage(result.compressed);
-      setDwtVisualization(result.dwtVisualization);
-      setDctVisualization(null);
-      setCompressionStats({
-        originalSize: result.originalSize,
-        compressedSize: result.compressedSize,
-        ratio: result.ratio,
-        psnr: result.psnr
-      });
+    try {
+      if (type === "DCT") {
+        const result = await applyFixedDCTCompression(uploadedImage, compressionLevel);
+        setCompressedImage(result.compressed);
+        setDctVisualization(result.dctVisualization);
+        setDwtVisualization(null);
+        setCompressionStats({
+          originalSize: result.originalSize,
+          compressedSize: result.compressedSize,
+          ratio: result.ratio,
+          psnr: result.psnr
+        });
+      } else if (type === "DWT") {
+        const result = await applyFixedDWTCompression(uploadedImage, compressionLevel);
+        setCompressedImage(result.compressed);
+        setDwtVisualization(result.dwtVisualization);
+        setDctVisualization(null);
+        setCompressionStats({
+          originalSize: result.originalSize,
+          compressedSize: result.compressedSize,
+          ratio: result.ratio,
+          psnr: result.psnr
+        });
+      }
+      toast.success(`${type} compression applied successfully!`);
+    } catch (error) {
+      console.error(`Error applying ${type} compression:`, error);
+      toast.error(`Failed to apply ${type} compression. Please try again.`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -167,12 +182,15 @@ const CompressionPage = () => {
                       <Button 
                         className="w-full bg-gradient-to-r from-colorscope-purple to-colorscope-indigo"
                         onClick={() => handleApplyCompression("DCT")}
+                        disabled={isProcessing || !uploadedImage}
                       >
                         Apply DCT Compression
                       </Button>
+                      
                       <Button 
                         className="w-full bg-gradient-to-r from-colorscope-pink to-colorscope-purple"
                         onClick={() => handleApplyCompression("DWT")}
+                        disabled={isProcessing || !uploadedImage}
                       >
                         Apply DWT Compression
                       </Button>
@@ -185,19 +203,19 @@ const CompressionPage = () => {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 bg-white/5 rounded-md">
                           <p className="text-xs text-gray-400">Original Size</p>
-                          <p className="font-medium">{compressionStats?.originalSize || "2.4 MB"}</p>
+                          <p className="font-medium">{compressionStats?.originalSize || "N/A"}</p>
                         </div>
                         <div className="p-3 bg-white/5 rounded-md">
                           <p className="text-xs text-gray-400">Compressed Size</p>
-                          <p className="font-medium">{compressionStats?.compressedSize || "0.8 MB"}</p>
+                          <p className="font-medium">{compressionStats?.compressedSize || "N/A"}</p>
                         </div>
                         <div className="p-3 bg-white/5 rounded-md">
                           <p className="text-xs text-gray-400">Compression Ratio</p>
-                          <p className="font-medium">{compressionStats?.ratio || "3:1"}</p>
+                          <p className="font-medium">{compressionStats?.ratio || "N/A"}</p>
                         </div>
                         <div className="p-3 bg-white/5 rounded-md">
                           <p className="text-xs text-gray-400">PSNR</p>
-                          <p className="font-medium">{compressionStats?.psnr || "32.4 dB"}</p>
+                          <p className="font-medium">{compressionStats?.psnr || "N/A"}</p>
                         </div>
                       </div>
                       
@@ -205,6 +223,7 @@ const CompressionPage = () => {
                         className="w-full flex items-center justify-center"
                         variant="outline"
                         onClick={handleViewAnalysis}
+                        disabled={!compressedImage}
                       >
                         <BarChart className="h-4 w-4 mr-2" />
                         View Detailed Analysis
@@ -235,25 +254,20 @@ const CompressionPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Original Image</p>
-                        <img 
-                          src={uploadedImage} 
-                          alt="Original" 
-                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
+                        <ImageVisualization 
+                          imageData={uploadedImage} 
+                          altText="Original Image" 
+                          fallbackText="Upload an image to see the original"
                         />
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-2">Compressed Image</p>
-                        {compressedImage ? (
-                          <img 
-                            src={compressedImage} 
-                            alt="Compressed" 
-                            className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                          />
-                        ) : (
-                          <div className="w-full aspect-video rounded-md border border-gray-700 bg-colorscope-dark-2 flex items-center justify-center">
-                            <p className="text-gray-400 text-sm">Apply compression to see results</p>
-                          </div>
-                        )}
+                        <ImageVisualization 
+                          imageData={compressedImage} 
+                          altText="Compressed Image" 
+                          fallbackText="Apply compression to see results"
+                          isLoading={isProcessing}
+                        />
                       </div>
                     </div>
                   </Card>
@@ -261,32 +275,22 @@ const CompressionPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card className="glass p-4">
                       <h3 className="text-lg font-medium mb-4">Frequency Domain (DCT)</h3>
-                      {dctVisualization ? (
-                        <img 
-                          src={dctVisualization} 
-                          alt="DCT Visualization" 
-                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                        />
-                      ) : (
-                        <div className="h-48 rounded-md bg-colorscope-dark-2 border border-gray-700 flex items-center justify-center">
-                          <p className="text-gray-400 text-sm">DCT visualization will appear here</p>
-                        </div>
-                      )}
+                      <ImageVisualization 
+                        imageData={dctVisualization} 
+                        altText="DCT Visualization" 
+                        fallbackText="DCT visualization will appear here"
+                        isLoading={isProcessing && !dwtVisualization}
+                      />
                     </Card>
                     
                     <Card className="glass p-4">
                       <h3 className="text-lg font-medium mb-4">Wavelet Domain (DWT)</h3>
-                      {dwtVisualization ? (
-                        <img 
-                          src={dwtVisualization} 
-                          alt="DWT Visualization" 
-                          className="w-full h-auto rounded-md border border-gray-700 object-cover" 
-                        />
-                      ) : (
-                        <div className="h-48 rounded-md bg-colorscope-dark-2 border border-gray-700 flex items-center justify-center">
-                          <p className="text-gray-400 text-sm">DWT visualization will appear here</p>
-                        </div>
-                      )}
+                      <ImageVisualization 
+                        imageData={dwtVisualization} 
+                        altText="DWT Visualization" 
+                        fallbackText="DWT visualization will appear here"
+                        isLoading={isProcessing && !dctVisualization}
+                      />
                     </Card>
                   </div>
                 </div>
