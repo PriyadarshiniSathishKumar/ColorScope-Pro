@@ -1,73 +1,67 @@
-# Welcome to your Lovable project
+# ColourScope Pro
+<img width="1919" height="859" alt="image" src="https://github.com/user-attachments/assets/cd26779f-63c8-46b2-bd0c-948800a89cb8" />
+<img width="1919" height="856" alt="image" src="https://github.com/user-attachments/assets/edabfdfd-9928-4d62-b20b-816e56c5e36c" />
+<img width="1919" height="867" alt="image" src="https://github.com/user-attachments/assets/14f48b79-9451-4737-8bb9-a9df9f17c573" />
+<img width="1919" height="861" alt="image" src="https://github.com/user-attachments/assets/15abb81e-0d6c-4914-acb4-98727af21db9" />
+<img width="1919" height="854" alt="image" src="https://github.com/user-attachments/assets/837a0ea7-dfcc-4e53-90a6-1dd15a5420f2" />
+<img width="1919" height="868" alt="image" src="https://github.com/user-attachments/assets/1fcdeefd-5a91-495c-b24e-2dc1a4e4316a" />
 
-## Project info
+Interactive Color Picker, Analyzer & Compression Studio
 
-**URL**: https://lovable.dev/projects/8a59dbe0-ea4e-4b85-8c9f-b02ddde087de
+ColorScope Pro is a comprehensive web-based image processing and analysis tool built with React and TypeScript. It provides advanced image manipulation capabilities through an intuitive interface.
 
-## How can I edit this code?
+# Features
+# 🎨 Color Picker & Analysis
+Interactive color selection from uploaded images
+Real-time color value extraction (RGB, HSL, HEX)
+Color histogram visualization
+Detailed color analysis and statistics
 
-There are several ways of editing your application.
+# 🔧 Noise Removal
+Advanced noise reduction algorithms
+Before/after comparison views
+Adjustable noise reduction parameters
+Real-time processing preview
 
-**Use Lovable**
+# ✂️ Image Segmentation
+Intelligent image segmentation tools
+Multiple segmentation algorithms
+Region-based analysis
+Interactive segment selection
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8a59dbe0-ea4e-4b85-8c9f-b02ddde087de) and start prompting.
+# 📦 Image Compression
+DCT (Discrete Cosine Transform) compression
+DWT (Discrete Wavelet Transform) compression
+Adjustable compression levels
+Quality vs file size analysis
+Compression statistics and comparison
 
-Changes made via Lovable will be committed automatically to this repo.
+# Tech Stack
+Frontend: React 18, TypeScript, Vite
+Styling: Tailwind CSS, shadcn/ui components
+Image Processing: Custom algorithms for DCT/DWT compression
+UI Components: Radix UI primitives
+Charts: Recharts for data visualization
+Icons: Lucide React
+Getting Started
 
-**Use your preferred IDE**
+# Install dependencies
+npm install
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
-```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8a59dbe0-ea4e-4b85-8c9f-b02ddde087de) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Build for production
+npm run build
+Usage
+Upload an Image: Use the image uploader to select your image
+Choose a Module: Select from Color Picker, Noise Remover, Segmentation, or Compression
+Analyze & Process: Use the interactive tools to process your image
+Download Results: Save your processed images
+Features Overview
+Responsive Design: Works seamlessly on desktop and mobile
+Real-time Processing: Instant feedback and previews
+Multiple Export Formats: Download processed images in various formats
+Interactive Visualizations: Charts and graphs for detailed analysis
+Professional Interface: Clean, modern UI with dark theme support
+Perfect for photographers, designers, researchers, and anyone working with digital image processing.
